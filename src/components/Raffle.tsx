@@ -27,6 +27,7 @@ export function Raffle() {
   const [showWinnerDialog, setShowWinnerDialog] = useState(false);
   const [currentWinner, setCurrentWinner] = useState<string | null>(null);
   const [addMessage, setAddMessage] = useState<string | null>(null);
+  const [drawDuration, setDrawDuration] = useState(3); // Duration in seconds
   const drawIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const idleIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -42,9 +43,11 @@ export function Raffle() {
   // Idle shuffling - show random names when not drawing
   useEffect(() => {
     if (participants.length > 0 && !isDrawing && !showWinnerDialog) {
-      // Start idle shuffle
+      // Start idle shuffle with unbiased randomness
       idleIntervalRef.current = setInterval(() => {
-        const randomIndex = Math.floor(Math.random() * participants.length);
+        const randomArray = new Uint32Array(1);
+        crypto.getRandomValues(randomArray);
+        const randomIndex = randomArray[0] % participants.length;
         setDisplayName(participants[randomIndex].name);
       }, 500);
     } else if (participants.length === 0) {
@@ -106,13 +109,17 @@ export function Raffle() {
 
     setIsDrawing(true);
 
-    // Fast shuffle animation
+    // Fast shuffle animation based on user-defined duration
+    const intervalMs = 60; // Time between each name change
+    const totalIterations = Math.floor((drawDuration * 1000) / intervalMs);
     let count = 0;
-    const totalIterations = 40;
     const shuffleNames = [...participants];
 
     drawIntervalRef.current = setInterval(() => {
-      const randomIndex = Math.floor(Math.random() * shuffleNames.length);
+      // Use crypto.getRandomValues for unbiased randomness
+      const randomArray = new Uint32Array(1);
+      crypto.getRandomValues(randomArray);
+      const randomIndex = randomArray[0] % shuffleNames.length;
       setDisplayName(shuffleNames[randomIndex].name);
       count++;
 
@@ -122,7 +129,7 @@ export function Raffle() {
         }
         performDraw();
       }
-    }, 60);
+    }, intervalMs);
   };
 
   const performDraw = async () => {
@@ -288,6 +295,27 @@ export function Raffle() {
                 {addMessage}
               </p>
             )}
+          </div>
+
+          {/* Drawing duration setting */}
+          <div>
+            <label className="block text-lg font-bold mb-3">
+              Drawing Duration
+            </label>
+            <div className="flex items-center gap-3">
+              <input
+                type="number"
+                min={1}
+                max={30}
+                value={drawDuration}
+                onChange={(e) => setDrawDuration(Math.max(1, Math.min(30, parseInt(e.target.value) || 1)))}
+                className="w-24 p-3 text-lg text-center border-2 border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+              />
+              <span className="text-lg text-gray-600">seconds</span>
+            </div>
+            <p className="mt-2 text-sm text-gray-500">
+              How long the names shuffle before revealing the winner (1-30 seconds)
+            </p>
           </div>
 
           {/* Current participants list */}

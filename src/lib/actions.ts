@@ -1,5 +1,6 @@
 "use server";
 
+import { randomInt } from "crypto";
 import { prisma } from "./prisma";
 import { revalidatePath } from "next/cache";
 
@@ -81,7 +82,8 @@ export async function drawWinner() {
     return { error: "No participants available" };
   }
 
-  const randomIndex = Math.floor(Math.random() * participants.length);
+  // Use cryptographically secure random selection to avoid bias
+  const randomIndex = randomInt(participants.length);
   const winner = participants[randomIndex];
 
   await prisma.winner.create({
